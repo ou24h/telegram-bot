@@ -1,7 +1,6 @@
 {
   "dependencies": {
-    "node-telegram-bot-api": "^0.66.0",
-    "yt-dlp-exec": "^1.0.2"
+    "node-telegram-bot-api": "^0.66.0"
   },
   "name": "c1ovebot-telegram",
   "version": "1.0.0",
