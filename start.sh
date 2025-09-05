@@ -1,16 +1,14 @@
 #!/bin/bash
 
-# تحميل yt-dlp
+# ✅ تحميل yt-dlp
 curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o yt-dlp
 chmod +x yt-dlp
 
-# تحميل ffmpeg
+# ✅ تحميل ffmpeg بصيغة tar.xz
 mkdir -p ffmpeg
-curl -L https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip -o ffmpeg.zip
-unzip ffmpeg.zip -d ffmpeg
-mv ffmpeg/ffmpeg-*/* ffmpeg
-rm -rf ffmpeg/ffmpeg-*
-rm ffmpeg.zip
+curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-i686-static.tar.xz -o ffmpeg.tar.xz
+tar -xf ffmpeg.tar.xz --strip-components=1 -C ffmpeg
+rm ffmpeg.tar.xz
 
-# تشغيل البوت
+# ✅ تشغيل البوت
 node bot.js
