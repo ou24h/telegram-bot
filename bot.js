@@ -3,7 +3,7 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-// ✅ شعار CloveBot
+// ✅ شعار CloveBot في الطرفية
 console.log(`
     CCCCCCCCCCCCC      LLLLLLLLLLL             OOOOOOOOO      VVVVVVVV             VVVVVVVV EEEEEEEEEEEEEEEEEEEEEE
  CCC::::::::::::C      L:::::::::L           OO:::::::::OO    V::::::V             V::::::V E::::::::::::::::::::E
@@ -27,9 +27,7 @@ CC::::::::::::::::C    L:::::::::L        OO:::::::::::::OO              V:::::V
 `);
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const ffmpegPath = process.env.FFMPEG_PATH || '/app/ffmpeg/bin';
-const bot = new TelegramBot(token, { webHook: { port: process.env.PORT || 3000 } });
-bot.setWebHook(`https://${process.env.RAILWAY_STATIC_URL}/${token}`);
+const bot = new TelegramBot(token, { polling: true });
 
 const userLinks = {};
 const userChoices = {};
@@ -96,7 +94,7 @@ bot.on('callback_query', query => {
     const fileName = `audio_${Date.now()}.mp3`;
     const filePath = path.join(__dirname, fileName);
 
-    exec(`yt-dlp --ffmpeg-location "${ffmpegPath}" -x --audio-format mp3 -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
+    exec(`./yt-dlp --extract-audio --audio-format mp3 -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
       if (error) {
         bot.sendMessage(chatId, `❌ فشل التحويل:\n${stderr}`);
         return;
@@ -132,47 +130,38 @@ bot.on('callback_query', query => {
     if (quality === 'medium') format = '-f "bv*[height<=720]+ba/b[height<=720]"';
     if (quality === 'high') format = '-f "bestvideo+bestaudio/best"';
 
-    bot.sendMessage(chatId, `📥 جاري تحديد اسم الملف للفيديو بجودة ${quality}...`);
+    bot.sendMessage(chatId, `📥 جاري تحميل الفيديو بجودة ${quality}...`);
 
-    exec(`yt-dlp ${format} --print filename "${url}"`, (error, stdout, stderr) => {
-      if (error || !stdout.trim()) {
-        bot.sendMessage(chatId, `❌ فشل في تحديد اسم الملف:\n${stderr}`);
+    const fileName = `video_${Date.now()}.mp4`;
+    const filePath = path.join(__dirname, fileName);
+
+    exec(`./yt-dlp ${format} --merge-output-format mp4 -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
+      if (error) {
+        bot.sendMessage(chatId, `❌ فشل التحميل:\n${stderr}`);
         return;
       }
 
-      const fileName = stdout.trim().replace(/\.[^/.]+$/, '.mp4');
-      const filePath = path.join(__dirname, fileName);
+      if (!fs.existsSync(filePath)) {
+        bot.sendMessage(chatId, `❌ الملف لم يتم إنشاؤه:\n${fileName}`);
+        return;
+      }
 
-      bot.sendMessage(chatId, `📦 سيتم حفظ الملف باسم:\n${fileName}\n⏳ جاري التحميل...`);
+      const stats = fs.statSync(filePath);
+      if (stats.size === 0) {
+        bot.sendMessage(chatId, `⚠️ الملف تم إنشاؤه لكنه فارغ.`);
+        fs.unlinkSync(filePath);
+        return;
+      }
 
-      exec(`yt-dlp ${format} --remux-video mp4 --ffmpeg-location "${ffmpegPath}" -o "${filePath}" "${url}"`, (error2, stdout2, stderr2) => {
-        if (error2) {
-          bot.sendMessage(chatId, `❌ فشل التحميل:\n${stderr2}`);
-          return;
-        }
+      const fileSizeMB = stats.size / (1024 * 1024);
+      const sendMethod = fileSizeMB > 48 ? bot.sendDocument : bot.sendVideo;
 
-        if (!fs.existsSync(filePath)) {
-          bot.sendMessage(chatId, `❌ الملف لم يتم إنشاؤه:\n${fileName}`);
-          return;
-        }
-
-        const stats = fs.statSync(filePath);
-        if (stats.size === 0) {
-          bot.sendMessage(chatId, `⚠️ الملف تم إنشاؤه لكنه فارغ.`);
-          fs.unlinkSync(filePath);
-          return;
-        }
-
-        const fileSizeMB = stats.size / (1024 * 1024);
-        const sendMethod = fileSizeMB > 48 ? bot.sendDocument : bot.sendVideo;
-
-        sendMethod.call(bot, chatId, filePath).then(() => {
-          fs.unlinkSync(filePath);
-          delete userLinks[chatId];
-          delete userChoices[chatId];
-        }).catch(err => {
-          bot.sendMessage(chatId, `⚠️ تعذر إرسال الفيديو:\n${err.message}`);
-        });
+      sendMethod.call(bot, chatId, filePath).then(() => {
+        fs.unlinkSync(filePath);
+        delete userLinks[chatId];
+        delete userChoices[chatId];
+      }).catch(err => {
+        bot.sendMessage(chatId, `⚠️ تعذر إرسال الفيديو:\n${err.message}`);
       });
     });
   }
