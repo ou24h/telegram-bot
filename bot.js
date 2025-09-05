@@ -29,6 +29,7 @@ CC::::::::::::::::C    L:::::::::L        OO:::::::::::::OO              V:::::V
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 
+const ffmpegPath = path.join(__dirname, 'ffmpeg', 'ffmpeg');
 const userLinks = {};
 const userChoices = {};
 
@@ -94,7 +95,7 @@ bot.on('callback_query', query => {
     const fileName = `audio_${Date.now()}.mp3`;
     const filePath = path.join(__dirname, fileName);
 
-    exec(`./yt-dlp --extract-audio --audio-format mp3 -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
+    exec(`./yt-dlp --ffmpeg-location "${ffmpegPath}" --extract-audio --audio-format mp3 -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
       if (error || !fs.existsSync(filePath)) {
         bot.sendMessage(chatId, `❌ فشل التحويل:\n${stderr || error.message}`);
         return;
@@ -130,7 +131,7 @@ bot.on('callback_query', query => {
     const fileName = `video_${Date.now()}.mp4`;
     const filePath = path.join(__dirname, fileName);
 
-    exec(`./yt-dlp ${format} --merge-output-format mp4 -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
+    exec(`./yt-dlp ${format} --ffmpeg-location "${ffmpegPath}" --merge-output-format mp4 -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
       if (error || !fs.existsSync(filePath)) {
         bot.sendMessage(chatId, `❌ فشل التحميل:\n${stderr || error.message}`);
         return;
