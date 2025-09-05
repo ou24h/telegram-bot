@@ -1,12 +1,17 @@
 {
-  "name": "clovebot",
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0",
+    "yt-dlp-exec": "^1.0.2"
+  },
+  "name": "c1ovebot-telegram",
   "version": "1.0.0",
-  "description": "Telegram bot for downloading videos and audio",
+  "description": "",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "dependencies": {
-    "node-telegram-bot-api": "^0.61.0"
-  }
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
 }
