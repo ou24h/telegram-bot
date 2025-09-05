@@ -95,13 +95,8 @@ bot.on('callback_query', query => {
     const filePath = path.join(__dirname, fileName);
 
     exec(`./yt-dlp --extract-audio --audio-format mp3 -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
-      if (error) {
-        bot.sendMessage(chatId, `❌ فشل التحويل:\n${stderr}`);
-        return;
-      }
-
-      if (!fs.existsSync(filePath)) {
-        bot.sendMessage(chatId, `❌ الملف لم يتم إنشاؤه:\n${fileName}`);
+      if (error || !fs.existsSync(filePath)) {
+        bot.sendMessage(chatId, `❌ فشل التحويل:\n${stderr || error.message}`);
         return;
       }
 
@@ -136,13 +131,8 @@ bot.on('callback_query', query => {
     const filePath = path.join(__dirname, fileName);
 
     exec(`./yt-dlp ${format} --merge-output-format mp4 -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
-      if (error) {
-        bot.sendMessage(chatId, `❌ فشل التحميل:\n${stderr}`);
-        return;
-      }
-
-      if (!fs.existsSync(filePath)) {
-        bot.sendMessage(chatId, `❌ الملف لم يتم إنشاؤه:\n${fileName}`);
+      if (error || !fs.existsSync(filePath)) {
+        bot.sendMessage(chatId, `❌ فشل التحميل:\n${stderr || error.message}`);
         return;
       }
 
