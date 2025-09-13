@@ -113,6 +113,7 @@ bot.on('message', async msg => {
       });
 
       const { name, artists } = trackRes.data;
+      const coverUrl = trackRes.data.album.images?.[0]?.url;
       const query = `${name} - ${artists.map(a => a.name).join(', ')}`;
       bot.sendMessage(chatId, `🔍 جاري البحث عن: ${query} في SoundCloud...`);
 
@@ -129,12 +130,23 @@ bot.on('message', async msg => {
           return;
         }
 
-        bot.sendAudio(chatId, filePath).then(() => {
-          fs.unlinkSync(filePath);
-        }).catch(e => {
-          bot.sendMessage(chatId, `⚠️ تعذر إرسال الملف:\n${e.message}`);
-        });
-      });
+        if (coverUrl) {
+  bot.sendPhoto(chatId, coverUrl, {
+    caption: `🎵 ${name}\n👤 ${artists.map(a => a.name).join(', ')}`
+  }).then(() => {
+    bot.sendAudio(chatId, filePath).then(() => {
+      fs.unlinkSync(filePath);
+    }).catch(e => {
+      bot.sendMessage(chatId, `⚠️ تعذر إرسال الملف:\n${e.message}`);
+    });
+  });
+} else {
+  bot.sendAudio(chatId, filePath).then(() => {
+    fs.unlinkSync(filePath);
+  }).catch(e => {
+    bot.sendMessage(chatId, `⚠️ تعذر إرسال الملف:\n${e.message}`);
+  });
+}
 
     } catch (err) {
       bot.sendMessage(chatId, `❌ فشل الاتصال بـ Spotify API:\n${err.message}`);
@@ -280,6 +292,7 @@ bot.on('callback_query', query => {
     });
   }
 });
+
 
 
 
