@@ -3,27 +3,35 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+// ✅ شعار التشغيل
 console.log(`
     CCCCCCCCCCCCC      LLLLLLLLLLL             OOOOOOOOO      VVVVVVVV             VVVVVVVV EEEEEEEEEEEEEEEEEEEEEE
  CCC::::::::::::C      L:::::::::L           OO:::::::::OO    V::::::V             V::::::V E::::::::::::::::::::E
 CC:::::::::::::::C     L:::::::::L         OO:::::::::::::OO  V::::::V            V::::::V  E::::::::::::::::::::E
 C:::::CCCCCCCC::::C    LL:::::::LL        O:::::::OOO:::::::O  V::::::V           V::::::V  EE::::::EEEEEEEEE::::E
 C:::::C       CCCCC      L:::::L         O:::::::O   O:::::::O  V:::::V           V:::::V    E:::::E       EEEEEE
-C:::::C                  L:::::L         O::::::O     O::::::O   V:::::V         V:::::V     E:::::E             
-C:::::C                  L:::::L         O::::::O     O::::::O    V:::::V       V:::::V      E::::::EEEEEEEEEE   
-C:::::C                  L:::::L         O::::::O     O::::::O     V:::::V     V:::::V       E:::::::::::::::E   
-C:::::C                  L:::::L         O::::::O     O::::::O      V:::::V   V:::::V        E:::::::::::::::E   
-C:::::C                  L:::::L         O::::::O     O::::::O       V:::::V V:::::V         E::::::EEEEEEEEEE   
-C:::::C                  L:::::L         O::::::O     O::::::O        V:::::V:::::V          E:::::E             
+C:::::C                  L:::::L         O::::::O     O::::::O   V:::::V         V:::::V     E:::::E              
+C:::::C                  L:::::L         O::::::O     O::::::O    V:::::V       V:::::V      E::::::EEEEEEEEEE    
+C:::::C                  L:::::L         O::::::O     O::::::O     V:::::V     V:::::V       E:::::::::::::::E    
+C:::::C                  L:::::L         O::::::O     O::::::O      V:::::V   V:::::V        E:::::::::::::::E    
+C:::::C                  L:::::L         O::::::O     O::::::O       V:::::V V:::::V         E::::::EEEEEEEEEE    
+C:::::C                  L:::::L         O::::::O     O::::::O        V:::::V:::::V          E:::::E              
 C:::::C       CCCCCC     L:::::L         O:::::::O   O:::::::O         V:::::::::V           E:::::E       EEEEEE
 C:::::CCCCCCCC:::::C   LL:::::::LL       O::::::::OOO:::::::O           V:::::::V           EE::::::EEEEEEEE:::::E
 CC::::::::::::::::C    L:::::::::L        OO:::::::::::::OO              V:::::V            E::::::::::::::::::::E
  CCC:::::::::::::C     L:::::::::L          OO:::::::::OO                 V:::V             E::::::::::::::::::::E
    CCCCCCCCCCCCCC      LLLLLLLLLLL             OOOOOOOOO                   VVV              EEEEEEEEEEEEEEEEEEEEEE
-   
+
 =====  CloveBot  =====
 =====Made  in  SA=====
 `);
+
+require('dotenv').config();
+const TelegramBot = require('node-telegram-bot-api');
+const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const axios = require('axios');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
@@ -41,20 +49,18 @@ bot.onText(/\/start/, msg => {
   bot.sendMessage(msg.chat.id, '👋 مرحبًا! أرسل رابط فيديو أو صورة أو أغنية من TikTok أو YouTube أو Spotify أو أي رابط مباشر لصورة.');
 });
 
-bot.on('message', msg => {
+bot.on('message', async msg => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
   if (!text || typeof text !== 'string') return;
   if (text.startsWith('/')) return;
 
-  // ✅ تنبيه خاص لروابط TikTok من نوع photo
   if (text.includes('tiktok.com') && text.includes('/photo/')) {
     bot.sendMessage(chatId, '📷 روابط الصور من TikTok غير مدعومة حاليًا.\nافتح الرابط في المتصفح وانسخ رابط الصورة المباشر.');
     return;
   }
 
-  // ✅ تحميل صورة مباشرة
   if (isImageUrl(text)) {
     const fileName = `image_${Date.now()}${path.extname(text)}`;
     const filePath = path.join(__dirname, fileName);
@@ -75,42 +81,63 @@ bot.on('message', msg => {
     return;
   }
 
-// ✅ استخراج اسم الأغنية من رابط Spotify والبحث بها في SoundCloud
-if (text.includes('spotify.com/track/')) {
-  bot.sendMessage(chatId, '🎧 جاري استخراج معلومات الأغنية من Spotify...');
+  // ✅ Spotify: استخراج اسم الأغنية والبحث في SoundCloud
+  if (text.includes('spotify.com/track/')) {
+    bot.sendMessage(chatId, '🎧 جاري استخراج معلومات الأغنية من Spotify...');
 
-  exec(`./yt-dlp --print "%(title)s - %(artist)s" "${text}"`, (error, stdout, stderr) => {
-    const query = stdout?.trim();
-    if (!query || error) {
-      const msg = stderr?.trim() || error?.message || '⚠️ تعذر استخراج اسم الأغنية.';
-      bot.sendMessage(chatId, `❌ فشل التحليل:\n${msg}`);
+    const trackId = text.split('/track/')[1]?.split('?')[0];
+    if (!trackId) {
+      bot.sendMessage(chatId, '❌ لم يتم استخراج ID الأغنية من الرابط.');
       return;
     }
 
-    bot.sendMessage(chatId, `🔍 جاري البحث عن: ${query} في SoundCloud...`);
-
-    const fileName = `sc_${Date.now()}.mp3`;
-    const filePath = path.join(__dirname, fileName);
-
-    exec(`./yt-dlp "ytsearch1:${query} site:soundcloud.com" --extract-audio --audio-format mp3 -o "${filePath}"`, (err, out, errOut) => {
-      if (err || !fs.existsSync(filePath)) {
-        const msg = errOut?.trim() || err?.message || '⚠️ لم يتم العثور على الأغنية في SoundCloud.';
-        bot.sendMessage(chatId, `❌ فشل التحميل:\n${msg}`);
-        return;
-      }
-
-      bot.sendAudio(chatId, filePath).then(() => {
-        fs.unlinkSync(filePath);
-      }).catch(e => {
-        bot.sendMessage(chatId, `⚠️ تعذر إرسال الملف:\n${e.message}`);
+    try {
+      const tokenRes = await axios.post('https://accounts.spotify.com/api/token', null, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': 'Basic ' + Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64')
+        },
+        params: {
+          grant_type: 'client_credentials'
+        }
       });
-    });
-  });
 
-  return;
-}
+      const accessToken = tokenRes.data.access_token;
 
-  // ✅ روابط فيديوهات وصوت وصورة مصغرة
+      const trackRes = await axios.get(`https://api.spotify.com/v1/tracks/${trackId}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+
+      const { name, artists } = trackRes.data;
+      const query = `${name} - ${artists.map(a => a.name).join(', ')}`;
+      bot.sendMessage(chatId, `🔍 جاري البحث عن: ${query} في SoundCloud...`);
+
+      const fileName = `sc_${Date.now()}.mp3`;
+      const filePath = path.join(__dirname, fileName);
+
+      exec(`./yt-dlp "ytsearch1:${query} site:soundcloud.com" --extract-audio --audio-format mp3 -o "${filePath}"`, (err, out, errOut) => {
+        if (err || !fs.existsSync(filePath)) {
+          const msg = errOut?.trim() || err?.message || '⚠️ لم يتم العثور على الأغنية في SoundCloud.';
+          bot.sendMessage(chatId, `❌ فشل التحميل:\n${msg}`);
+          return;
+        }
+
+        bot.sendAudio(chatId, filePath).then(() => {
+          fs.unlinkSync(filePath);
+        }).catch(e => {
+          bot.sendMessage(chatId, `⚠️ تعذر إرسال الملف:\n${e.message}`);
+        });
+      });
+
+    } catch (err) {
+      bot.sendMessage(chatId, `❌ فشل الاتصال بـ Spotify API:\n${err.message}`);
+    }
+
+    return;
+  }
+
   if (!text.startsWith('http')) {
     bot.sendMessage(chatId, '📨 تم استلام رسالتك: ' + text);
     return;
@@ -252,6 +279,3 @@ bot.on('callback_query', query => {
     });
   }
 });
-
-
-
