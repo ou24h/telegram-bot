@@ -33,8 +33,13 @@ const ffmpegPath = path.join(__dirname, 'ffmpeg', 'ffmpeg');
 const userLinks = {};
 const userChoices = {};
 
+const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+function isImageUrl(url) {
+  return imageExtensions.some(ext => url.toLowerCase().endsWith(ext));
+}
+
 bot.onText(/\/start/, msg => {
-  bot.sendMessage(msg.chat.id, '👋 مرحبًا! أرسل رابط فيديو من TikTok أو YouTube أو Instagram.');
+  bot.sendMessage(msg.chat.id, '👋 مرحبًا! أرسل رابط فيديو أو صورة من TikTok أو YouTube أو Instagram أو أي رابط مباشر لصورة.');
 });
 
 bot.on('message', msg => {
@@ -42,6 +47,28 @@ bot.on('message', msg => {
   const text = msg.text;
 
   if (text.startsWith('/')) return;
+
+  // ✅ تحميل صورة مباشرة
+  if (isImageUrl(text)) {
+    const fileName = `image_${Date.now()}${path.extname(text)}`;
+    const filePath = path.join(__dirname, fileName);
+
+    exec(`curl -L "${text}" -o "${filePath}"`, (error, stdout, stderr) => {
+      if (error || !fs.existsSync(filePath)) {
+        bot.sendMessage(chatId, `❌ فشل تحميل الصورة:\n${stderr || error.message}`);
+        return;
+      }
+
+      bot.sendPhoto(chatId, filePath).then(() => {
+        fs.unlinkSync(filePath);
+      }).catch(err => {
+        bot.sendMessage(chatId, `⚠️ تعذر إرسال الصورة:\n${err.message}`);
+      });
+    });
+
+    return;
+  }
+
   if (!text.startsWith('http')) {
     bot.sendMessage(chatId, '📨 تم استلام رسالتك: ' + text);
     return;
@@ -55,7 +82,8 @@ bot.on('message', msg => {
       inline_keyboard: [
         [
           { text: '📹 فيديو (mp4)', callback_data: 'type_mp4' },
-          { text: '🎵 صوت (mp3)', callback_data: 'type_mp3' }
+          { text: '🎵 صوت (mp3)', callback_data: 'type_mp3' },
+          { text: '🖼️ صورة (thumbnail)', callback_data: 'type_image' }
         ]
       ]
     }
@@ -69,6 +97,30 @@ bot.on('callback_query', query => {
 
   if (!url) {
     bot.sendMessage(chatId, '❌ لم يتم العثور على رابط.');
+    return;
+  }
+
+  if (data === 'type_image') {
+    bot.sendMessage(chatId, '📷 جاري استخراج الصورة المصغرة...');
+
+    const fileName = `thumb_${Date.now()}.jpg`;
+    const filePath = path.join(__dirname, fileName);
+
+    exec(`./yt-dlp --write-thumbnail --skip-download --convert-thumbnails jpg --ffmpeg-location "${ffmpegPath}" -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
+      if (error || !fs.existsSync(filePath)) {
+        bot.sendMessage(chatId, `❌ فشل استخراج الصورة:\n${stderr || error.message}`);
+        return;
+      }
+
+      bot.sendPhoto(chatId, filePath).then(() => {
+        fs.unlinkSync(filePath);
+        delete userLinks[chatId];
+        delete userChoices[chatId];
+      }).catch(err => {
+        bot.sendMessage(chatId, `⚠️ تعذر إرسال الصورة:\n${err.message}`);
+      });
+    });
+
     return;
   }
 
@@ -131,29 +183,4 @@ bot.on('callback_query', query => {
     const fileName = `video_${Date.now()}.mp4`;
     const filePath = path.join(__dirname, fileName);
 
-    exec(`./yt-dlp ${format} --ffmpeg-location "${ffmpegPath}" --merge-output-format mp4 -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
-      if (error || !fs.existsSync(filePath)) {
-        bot.sendMessage(chatId, `❌ فشل التحميل:\n${stderr || error.message}`);
-        return;
-      }
-
-      const stats = fs.statSync(filePath);
-      if (stats.size === 0) {
-        bot.sendMessage(chatId, `⚠️ الملف تم إنشاؤه لكنه فارغ.`);
-        fs.unlinkSync(filePath);
-        return;
-      }
-
-      const fileSizeMB = stats.size / (1024 * 1024);
-      const sendMethod = fileSizeMB > 48 ? bot.sendDocument : bot.sendVideo;
-
-      sendMethod.call(bot, chatId, filePath).then(() => {
-        fs.unlinkSync(filePath);
-        delete userLinks[chatId];
-        delete userChoices[chatId];
-      }).catch(err => {
-        bot.sendMessage(chatId, `⚠️ تعذر إرسال الفيديو:\n${err.message}`);
-      });
-    });
-  }
-});
+    exec(`./yt-dlp ${format} --ffmpeg-location "${ffmpegPath}" --merge-output-format mp
