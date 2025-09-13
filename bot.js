@@ -27,15 +27,30 @@ CC::::::::::::::::C    L:::::::::L        OO:::::::::::::OO              V:::::V
 
 require('dotenv').config();
 const axios = require('axios');
+const TelegramBot = require('node-telegram-bot-api');
+const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
+// ✅ فحص التوكن
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const bot = new TelegramBot(token, { polling: true });
+if (!token || token.length < 30) {
+  console.error('❌ TELEGRAM_BOT_TOKEN غير صالح أو مفقود.');
+  process.exit(1);
+}
 
+// ✅ فحص ffmpeg
 const ffmpegPath = path.join(__dirname, 'ffmpeg', 'ffmpeg');
+if (!fs.existsSync(ffmpegPath)) {
+  console.error('❌ ffmpeg غير موجود في المسار المحدد.');
+  process.exit(1);
+}
+
+const bot = new TelegramBot(token, { polling: true });
 const userLinks = {};
 const userChoices = {};
-
 const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+
 function isImageUrl(url) {
   return imageExtensions.some(ext => url.toLowerCase().endsWith(ext));
 }
@@ -76,10 +91,9 @@ bot.on('message', async msg => {
     return;
   }
 
-  // ✅ Spotify: استخراج اسم الأغنية والبحث في SoundCloud
+  // ✅ Spotify
   if (text.includes('spotify.com/track/')) {
     bot.sendMessage(chatId, '🎧 جاري استخراج معلومات الأغنية من Spotify...');
-
     const trackId = text.split('/track/')[1]?.split('?')[0];
     if (!trackId) {
       bot.sendMessage(chatId, '❌ لم يتم استخراج ID الأغنية من الرابط.');
@@ -87,12 +101,13 @@ bot.on('message', async msg => {
     }
 
     try {
-const tokenRes = await axios.post('https://accounts.spotify.com/api/token', 'grant_type=client_credentials', {
-  headers: {
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'Authorization': 'Basic ' + Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64')
-  }
-});
+      const tokenRes = await axios.post('https://accounts.spotify.com/api/token', 'grant_type=client_credentials', {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': 'Basic ' + Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64')
+        }
+      });
+
       const accessToken = tokenRes.data.access_token;
 
       const trackRes = await axios.get(`https://api.spotify.com/v1/tracks/${trackId}`, {
@@ -108,7 +123,7 @@ const tokenRes = await axios.post('https://accounts.spotify.com/api/token', 'gra
       const fileName = `sc_${Date.now()}.mp3`;
       const filePath = path.join(__dirname, fileName);
 
-      exec(`./yt-dlp "ytsearch1:${query} site:soundcloud.com" --extract-audio --audio-format mp3 -o "${filePath}"`, (err, out, errOut) => {
+      exec(`./yt-dlp "ytsearch1:${query} site:soundcloud.com" --extract-audio --audio-format mp3 --ffmpeg-location "${ffmpegPath}" -o "${filePath}"`, (err, out, errOut) => {
         if (err || !fs.existsSync(filePath)) {
           const msg = errOut?.trim() || err?.message || '⚠️ لم يتم العثور على الأغنية في SoundCloud.';
           bot.sendMessage(chatId, `❌ فشل التحميل:\n${msg}`);
@@ -162,7 +177,6 @@ bot.on('callback_query', query => {
 
   if (data === 'type_image') {
     bot.sendMessage(chatId, '📷 جاري استخراج الصورة المصغرة...');
-
     const fileName = `thumb_${Date.now()}.jpg`;
     const filePath = path.join(__dirname, fileName);
 
@@ -203,7 +217,6 @@ bot.on('callback_query', query => {
   if (data === 'type_mp3') {
     userChoices[chatId].type = 'mp3';
     bot.sendMessage(chatId, '📥 جاري استخراج الصوت...');
-
     const fileName = `audio_${Date.now()}.mp3`;
     const filePath = path.join(__dirname, fileName);
 
@@ -238,8 +251,6 @@ bot.on('callback_query', query => {
     if (quality === 'low') format = '-f "bv*[height<=360]+ba/b[height<=360]"';
     if (quality === 'medium') format = '-f "bv*[height<=720]+ba/b[height<=720]"';
     if (quality === 'high') format = '-f "bestvideo+bestaudio/best"';
-
-    bot.sendMessage(chatId, `📥 جاري تحميل الفيديو بجودة ${quality}...`);
 
     const fileName = `video_${Date.now()}.mp4`;
     const filePath = path.join(__dirname, fileName);
