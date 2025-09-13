@@ -27,10 +27,6 @@ CC::::::::::::::::C    L:::::::::L        OO:::::::::::::OO              V:::::V
 
 require('dotenv').config();
 const axios = require('axios');
-const TelegramBot = require('node-telegram-bot-api');
-const { exec } = require('child_process');
-const fs = require('fs');
-const path = require('path');
 
 // ✅ فحص التوكن
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -281,6 +277,7 @@ bot.on('callback_query', query => {
     });
   }
 });
+
 
 
 
