@@ -123,30 +123,31 @@ bot.on('message', async msg => {
       const fileName = `sc_${Date.now()}_${safeName}.mp3`;
       const filePath = path.join(__dirname, fileName);
 
-      exec(`./yt-dlp "ytsearch1:${query} site:soundcloud.com" --extract-audio --audio-format mp3 --ffmpeg-location "${ffmpegPath}" -o "${filePath}"`, (err, out, errOut) => {
-        if (err || !fs.existsSync(filePath)) {
-          const msg = errOut?.trim() || err?.message || '⚠️ لم يتم العثور على الأغنية في SoundCloud.';
-          bot.sendMessage(chatId, `❌ فشل التحميل:\n${msg}`);
-          return;
-        }
+exec(`./yt-dlp "ytsearch1:${query} site:soundcloud.com" --extract-audio --audio-format mp3 --ffmpeg-location "${ffmpegPath}" -o "${filePath}"`, (err, out, errOut) => {
+  if (err || !fs.existsSync(filePath)) {
+    const msg = errOut?.trim() || err?.message || '⚠️ لم يتم العثور على الأغنية في SoundCloud.';
+    bot.sendMessage(chatId, `❌ فشل التحميل:\n${msg}`);
+    return;
+  }
 
-        if (coverUrl) {
-  bot.sendPhoto(chatId, coverUrl, {
-    caption: `🎵 ${name}\n👤 ${artists.map(a => a.name).join(', ')}`
-  }).then(() => {
+  if (coverUrl) {
+    bot.sendPhoto(chatId, coverUrl, {
+      caption: `🎵 ${name}\n👤 ${artists.map(a => a.name).join(', ')}`
+    }).then(() => {
+      bot.sendAudio(chatId, filePath).then(() => {
+        fs.unlinkSync(filePath);
+      }).catch(e => {
+        bot.sendMessage(chatId, `⚠️ تعذر إرسال الملف:\n${e.message}`);
+      });
+    });
+  } else {
     bot.sendAudio(chatId, filePath).then(() => {
       fs.unlinkSync(filePath);
     }).catch(e => {
       bot.sendMessage(chatId, `⚠️ تعذر إرسال الملف:\n${e.message}`);
     });
-  });
-} else {
-  bot.sendAudio(chatId, filePath).then(() => {
-    fs.unlinkSync(filePath);
-  }).catch(e => {
-    bot.sendMessage(chatId, `⚠️ تعذر إرسال الملف:\n${e.message}`);
-  });
-}
+  }
+}); // ← هذا هو القوس الناقص
 
     } catch (err) {
       bot.sendMessage(chatId, `❌ فشل الاتصال بـ Spotify API:\n${err.message}`);
@@ -292,6 +293,7 @@ bot.on('callback_query', query => {
     });
   }
 });
+
 
 
 
