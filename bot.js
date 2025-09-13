@@ -75,30 +75,40 @@ bot.on('message', msg => {
     return;
   }
 
-  // ✅ تحميل أغنية من رابط Spotify عبر البحث في SoundCloud
-  if (text.includes('spotify.com/track/')) {
-    bot.sendMessage(chatId, '🎧 جاري البحث عن الأغنية في SoundCloud...');
+// ✅ استخراج اسم الأغنية من رابط Spotify والبحث بها في SoundCloud
+if (text.includes('spotify.com/track/')) {
+  bot.sendMessage(chatId, '🎧 جاري استخراج معلومات الأغنية من Spotify...');
 
-    const query = `"${text}" site:soundcloud.com`;
+  exec(`./yt-dlp --print "%(title)s - %(artist)s" "${text}"`, (error, stdout, stderr) => {
+    const query = stdout?.trim();
+    if (!query || error) {
+      const msg = stderr?.trim() || error?.message || '⚠️ تعذر استخراج اسم الأغنية.';
+      bot.sendMessage(chatId, `❌ فشل التحليل:\n${msg}`);
+      return;
+    }
+
+    bot.sendMessage(chatId, `🔍 جاري البحث عن: ${query} في SoundCloud...`);
+
     const fileName = `sc_${Date.now()}.mp3`;
     const filePath = path.join(__dirname, fileName);
 
-    exec(`./yt-dlp "ytsearch1:${query}" --extract-audio --audio-format mp3 -o "${filePath}"`, (error, stdout, stderr) => {
-      if (error || !fs.existsSync(filePath)) {
-        const msg = stderr?.trim() || error?.message || '⚠️ لم يتم العثور على الأغنية في SoundCloud.';
+    exec(`./yt-dlp "ytsearch1:${query} site:soundcloud.com" --extract-audio --audio-format mp3 -o "${filePath}"`, (err, out, errOut) => {
+      if (err || !fs.existsSync(filePath)) {
+        const msg = errOut?.trim() || err?.message || '⚠️ لم يتم العثور على الأغنية في SoundCloud.';
         bot.sendMessage(chatId, `❌ فشل التحميل:\n${msg}`);
         return;
       }
 
       bot.sendAudio(chatId, filePath).then(() => {
         fs.unlinkSync(filePath);
-      }).catch(err => {
-        bot.sendMessage(chatId, `⚠️ تعذر إرسال الملف:\n${err.message}`);
+      }).catch(e => {
+        bot.sendMessage(chatId, `⚠️ تعذر إرسال الملف:\n${e.message}`);
       });
     });
+  });
 
-    return;
-  }
+  return;
+}
 
   // ✅ روابط فيديوهات وصوت وصورة مصغرة
   if (!text.startsWith('http')) {
@@ -242,5 +252,6 @@ bot.on('callback_query', query => {
     });
   }
 });
+
 
 
