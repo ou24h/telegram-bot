@@ -45,8 +45,16 @@ bot.on('message', msg => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
+  if (!text || typeof text !== 'string') return;
   if (text.startsWith('/')) return;
 
+  // ✅ تنبيه خاص لروابط TikTok من نوع photo
+  if (text.includes('tiktok.com') && text.includes('/photo/')) {
+    bot.sendMessage(chatId, '📷 روابط الصور من TikTok غير مدعومة حاليًا.\nافتح الرابط في المتصفح وانسخ رابط الصورة المباشر.');
+    return;
+  }
+
+  // ✅ تحميل صورة مباشرة
   if (isImageUrl(text)) {
     const fileName = `image_${Date.now()}${path.extname(text)}`;
     const filePath = path.join(__dirname, fileName);
