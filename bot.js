@@ -3,7 +3,6 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-// ✅ شعار التشغيل
 console.log(`
     CCCCCCCCCCCCC      LLLLLLLLLLL             OOOOOOOOO      VVVVVVVV             VVVVVVVV EEEEEEEEEEEEEEEEEEEEEE
  CCC::::::::::::C      L:::::::::L           OO:::::::::OO    V::::::V             V::::::V E::::::::::::::::::::E
@@ -27,10 +26,6 @@ CC::::::::::::::::C    L:::::::::L        OO:::::::::::::OO              V:::::V
 `);
 
 require('dotenv').config();
-const TelegramBot = require('node-telegram-bot-api');
-const { exec } = require('child_process');
-const fs = require('fs');
-const path = require('path');
 const axios = require('axios');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -279,3 +274,4 @@ bot.on('callback_query', query => {
     });
   }
 });
+
