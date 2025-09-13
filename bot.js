@@ -3,7 +3,6 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-// ✅ شعار CloveBot في الطرفية
 console.log(`
     CCCCCCCCCCCCC      LLLLLLLLLLL             OOOOOOOOO      VVVVVVVV             VVVVVVVV EEEEEEEEEEEEEEEEEEEEEE
  CCC::::::::::::C      L:::::::::L           OO:::::::::OO    V::::::V             V::::::V E::::::::::::::::::::E
@@ -48,7 +47,6 @@ bot.on('message', msg => {
 
   if (text.startsWith('/')) return;
 
-  // ✅ تحميل صورة مباشرة
   if (isImageUrl(text)) {
     const fileName = `image_${Date.now()}${path.extname(text)}`;
     const filePath = path.join(__dirname, fileName);
@@ -168,6 +166,7 @@ bot.on('callback_query', query => {
         bot.sendMessage(chatId, `⚠️ تعذر إرسال الملف:\n${err.message}`);
       });
     });
+
     return;
   }
 
@@ -183,4 +182,29 @@ bot.on('callback_query', query => {
     const fileName = `video_${Date.now()}.mp4`;
     const filePath = path.join(__dirname, fileName);
 
-    exec(`./yt-dlp ${format} --ffmpeg-location "${ffmpegPath}" --merge-output-format mp
+    exec(`./yt-dlp ${format} --ffmpeg-location "${ffmpegPath}" --merge-output-format mp4 -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
+      if (error || !fs.existsSync(filePath)) {
+        bot.sendMessage(chatId, `❌ فشل التحميل:\n${stderr || error.message}`);
+        return;
+      }
+
+      const stats = fs.statSync(filePath);
+      if (stats.size === 0) {
+        bot.sendMessage(chatId, `⚠️ الملف تم إنشاؤه لكنه فارغ.`);
+        fs.unlinkSync(filePath);
+        return;
+      }
+
+      const fileSizeMB = stats.size / (1024 * 1024);
+      const sendMethod = fileSizeMB > 48 ? bot.sendDocument : bot.sendVideo;
+
+      sendMethod.call(bot, chatId, filePath).then(() => {
+        fs.unlinkSync(filePath);
+        delete userLinks[chatId];
+        delete userChoices[chatId];
+      }).catch(err => {
+        bot.sendMessage(chatId, `⚠️ تعذر إرسال الفيديو:\n${err.message}`);
+      });
+    });
+  }
+});
