@@ -123,7 +123,7 @@ bot.on('message', async msg => {
       const fileName = `sc_${Date.now()}_${safeName}.mp3`;
       const filePath = path.join(__dirname, fileName);
 
-exec(`./yt-dlp "ytsearch5:${query} site:soundcloud.com" --match-filter "url~='soundcloud.com'" --no-playlist --no-warnings --force-ipv4 --extract-audio --audio-format mp3 --ffmpeg-location "${ffmpegPath}" -o "${filePath}"`, (err, out, errOut) => {
+exec(`./yt-dlp "ytsearch5:${query} site:soundcloud.com" --no-playlist --no-warnings --force-ipv4 --extract-audio --audio-format mp3 --ffmpeg-location "${ffmpegPath}" -o "${filePath}"`, (err, out, errOut) => {
   if (err || !fs.existsSync(filePath)) {
     const msg = errOut?.trim() || err?.message || '⚠️ لم يتم العثور على الأغنية في SoundCloud.';
     bot.sendMessage(chatId, `❌ فشل التحميل:\n${msg}`);
@@ -307,14 +307,3 @@ bot.on('callback_query', query => {
     });
   }
 });
-
-
-
-
-
-
-
-
-
-
-
