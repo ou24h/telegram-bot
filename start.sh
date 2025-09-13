@@ -28,6 +28,12 @@ if ! npm list dotenv >/dev/null 2>&1; then
   npm install dotenv
 fi
 
+# ✅ تثبيت axios لو ناقصة
+if ! npm list axios >/dev/null 2>&1; then
+  echo "📦 تثبيت axios..."
+  npm install axios
+fi
+
 # ✅ تشغيل البوت
 echo "🧠 تشغيل البوت..."
 node bot.js
