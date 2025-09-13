@@ -61,7 +61,7 @@ bot.on('message', msg => {
 
     exec(`curl -L "${text}" -o "${filePath}"`, (error, stdout, stderr) => {
       if (error || !fs.existsSync(filePath)) {
-        bot.sendMessage(chatId, `❌ فشل تحميل الصورة:\n${stderr || error.message}`);
+        bot.sendMessage(chatId, `❌ فشل تحميل الصورة:\n${stderr || error?.message || 'خطأ غير معروف'}`);
         return;
       }
 
@@ -75,17 +75,18 @@ bot.on('message', msg => {
     return;
   }
 
-  // ✅ تحميل أغنية من رابط Spotify عبر البحث في YouTube
+  // ✅ تحميل أغنية من رابط Spotify عبر البحث في SoundCloud
   if (text.includes('spotify.com/track/')) {
-    bot.sendMessage(chatId, '🎧 جاري البحث عن الأغنية على YouTube...');
+    bot.sendMessage(chatId, '🎧 جاري البحث عن الأغنية في SoundCloud...');
 
-    const query = `"${text}" audio`;
-    const fileName = `spotify_${Date.now()}.mp3`;
+    const query = `"${text}" site:soundcloud.com`;
+    const fileName = `sc_${Date.now()}.mp3`;
     const filePath = path.join(__dirname, fileName);
 
     exec(`./yt-dlp "ytsearch1:${query}" --extract-audio --audio-format mp3 -o "${filePath}"`, (error, stdout, stderr) => {
       if (error || !fs.existsSync(filePath)) {
-        bot.sendMessage(chatId, `❌ فشل تحميل الأغنية:\n${stderr || (error?.message || 'خطأ غير معروف')}`);
+        const msg = stderr?.trim() || error?.message || '⚠️ لم يتم العثور على الأغنية في SoundCloud.';
+        bot.sendMessage(chatId, `❌ فشل التحميل:\n${msg}`);
         return;
       }
 
@@ -139,7 +140,7 @@ bot.on('callback_query', query => {
 
     exec(`./yt-dlp --write-thumbnail --skip-download --convert-thumbnails jpg --ffmpeg-location "${ffmpegPath}" -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
       if (error || !fs.existsSync(filePath)) {
-        bot.sendMessage(chatId, `❌ فشل استخراج الصورة:\n${stderr || error.message}`);
+        bot.sendMessage(chatId, `❌ فشل استخراج الصورة:\n${stderr || error?.message || 'خطأ غير معروف'}`);
         return;
       }
 
@@ -180,7 +181,7 @@ bot.on('callback_query', query => {
 
     exec(`./yt-dlp --ffmpeg-location "${ffmpegPath}" --extract-audio --audio-format mp3 -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
       if (error || !fs.existsSync(filePath)) {
-        bot.sendMessage(chatId, `❌ فشل التحويل:\n${stderr || error.message}`);
+        bot.sendMessage(chatId, `❌ فشل التحويل:\n${stderr || error?.message || 'خطأ غير معروف'}`);
         return;
       }
 
@@ -217,7 +218,7 @@ bot.on('callback_query', query => {
 
     exec(`./yt-dlp ${format} --ffmpeg-location "${ffmpegPath}" --merge-output-format mp4 -o "${filePath}" "${url}"`, (error, stdout, stderr) => {
       if (error || !fs.existsSync(filePath)) {
-        bot.sendMessage(chatId, `❌ فشل التحميل:\n${stderr || error.message}`);
+        bot.sendMessage(chatId, `❌ فشل التحميل:\n${stderr || error?.message || 'خطأ غير معروف'}`);
         return;
       }
 
