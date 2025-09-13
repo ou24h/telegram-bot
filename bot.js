@@ -147,7 +147,7 @@ exec(`./yt-dlp "ytsearch1:${query} site:soundcloud.com" --extract-audio --audio-
       bot.sendMessage(chatId, `⚠️ تعذر إرسال الملف:\n${e.message}`);
     });
   }
-}); // ← هذا هو القوس الناقص
+}); // ← هذا القوس يغلق دالة exec
 
     } catch (err) {
       bot.sendMessage(chatId, `❌ فشل الاتصال بـ Spotify API:\n${err.message}`);
@@ -293,6 +293,7 @@ bot.on('callback_query', query => {
     });
   }
 });
+
 
 
 
