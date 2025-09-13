@@ -38,7 +38,7 @@ function isImageUrl(url) {
 }
 
 bot.onText(/\/start/, msg => {
-  bot.sendMessage(msg.chat.id, '👋 مرحبًا! أرسل رابط فيديو أو صورة من TikTok أو YouTube أو Instagram أو أي رابط مباشر لصورة.');
+  bot.sendMessage(msg.chat.id, '👋 مرحبًا! أرسل رابط فيديو أو صورة أو أغنية من TikTok أو YouTube أو Spotify أو أي رابط مباشر لصورة.');
 });
 
 bot.on('message', msg => {
@@ -75,6 +75,31 @@ bot.on('message', msg => {
     return;
   }
 
+  // ✅ تحميل أغنية من رابط Spotify عبر البحث في YouTube
+  if (text.includes('spotify.com/track/')) {
+    bot.sendMessage(chatId, '🎧 جاري البحث عن الأغنية على YouTube...');
+
+    const query = `"${text}" audio`;
+    const fileName = `spotify_${Date.now()}.mp3`;
+    const filePath = path.join(__dirname, fileName);
+
+    exec(`./yt-dlp "ytsearch1:${query}" --extract-audio --audio-format mp3 -o "${filePath}"`, (error, stdout, stderr) => {
+      if (error || !fs.existsSync(filePath)) {
+        bot.sendMessage(chatId, `❌ فشل تحميل الأغنية:\n${stderr || error.message}`);
+        return;
+      }
+
+      bot.sendAudio(chatId, filePath).then(() => {
+        fs.unlinkSync(filePath);
+      }).catch(err => {
+        bot.sendMessage(chatId, `⚠️ تعذر إرسال الملف:\n${err.message}`);
+      });
+    });
+
+    return;
+  }
+
+  // ✅ روابط فيديوهات وصوت وصورة مصغرة
   if (!text.startsWith('http')) {
     bot.sendMessage(chatId, '📨 تم استلام رسالتك: ' + text);
     return;
@@ -210,9 +235,4 @@ bot.on('callback_query', query => {
         fs.unlinkSync(filePath);
         delete userLinks[chatId];
         delete userChoices[chatId];
-      }).catch(err => {
-        bot.sendMessage(chatId, `⚠️ تعذر إرسال الفيديو:\n${err.message}`);
-      });
-    });
-  }
-});
+      }).
