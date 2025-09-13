@@ -85,7 +85,7 @@ bot.on('message', msg => {
 
     exec(`./yt-dlp "ytsearch1:${query}" --extract-audio --audio-format mp3 -o "${filePath}"`, (error, stdout, stderr) => {
       if (error || !fs.existsSync(filePath)) {
-        bot.sendMessage(chatId, `❌ فشل تحميل الأغنية:\n${stderr || error.message}`);
+        bot.sendMessage(chatId, `❌ فشل تحميل الأغنية:\n${stderr || (error?.message || 'خطأ غير معروف')}`);
         return;
       }
 
@@ -241,4 +241,5 @@ bot.on('callback_query', query => {
     });
   }
 });
+
 
