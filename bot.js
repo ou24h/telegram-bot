@@ -116,6 +116,9 @@ bot.on('message', async msg => {
       const query = `${name} - ${artists.map(a => a.name).join(', ')}`;
       bot.sendMessage(chatId, `🔍 جاري البحث عن: ${query} في SoundCloud...`);
 
+      // ✅ تحسين اسم الملف
+      const cleanQuery = query.replace(/[<>:"\/\\|?*]/g, '').trim();
+      const safeName = cleanQuery.replace(/\s+/g, '_');
       const fileName = `sc_${Date.now()}.mp3`;
       const filePath = path.join(__dirname, fileName);
 
@@ -277,6 +280,7 @@ bot.on('callback_query', query => {
     });
   }
 });
+
 
 
 
