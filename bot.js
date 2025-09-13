@@ -119,7 +119,7 @@ bot.on('message', async msg => {
       // ✅ تحسين اسم الملف
       const cleanQuery = query.replace(/[<>:"\/\\|?*]/g, '').trim();
       const safeName = cleanQuery.replace(/\s+/g, '_');
-      const fileName = `sc_${Date.now()}.mp3`;
+      const fileName = `sc_${Date.now()}_${safeName}.mp3`;
       const filePath = path.join(__dirname, fileName);
 
       exec(`./yt-dlp "ytsearch1:${query} site:soundcloud.com" --extract-audio --audio-format mp3 --ffmpeg-location "${ffmpegPath}" -o "${filePath}"`, (err, out, errOut) => {
