@@ -87,7 +87,7 @@ bot.on('message', async msg => {
     }
 
     try {
-      const tokenRes = await axios.post('https://accounts.spotify.com/api/token', 'grant_type=client_credentials', {
+const tokenRes = await axios.post('https://accounts.spotify.com/api/token', 'grant_type=client_credentials', {
   headers: {
     'Content-Type': 'application/x-www-form-urlencoded',
     'Authorization': 'Basic ' + Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64')
@@ -270,5 +270,6 @@ bot.on('callback_query', query => {
     });
   }
 });
+
 
 
