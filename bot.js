@@ -235,4 +235,10 @@ bot.on('callback_query', query => {
         fs.unlinkSync(filePath);
         delete userLinks[chatId];
         delete userChoices[chatId];
-      }).
+      }).catch(err => {
+        bot.sendMessage(chatId, `⚠️ تعذر إرسال الفيديو:\n${err.message}`);
+      });
+    });
+  }
+});
+
